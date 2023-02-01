@@ -1,55 +1,50 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import { MdOutlineImageSearch } from 'react-icons/md';
 import PropTypes from 'prop-types';
 
 import css from './Searchbar.module.css';
 
-class Searchbar extends Component {
-    state = {
-        searchFormValue: '',
-    };
+const Searchbar = ({ onSubmit, onClearByInput }) => {
+    const [searchFormValue, setSearchFormValue] = useState('');
 
-    handleSubmit = e => {
+    const handleSubmit = e => {
         e.preventDefault();
 
-        const { onSubmit } = this.props;
-        onSubmit(this.state.searchFormValue);
+        onSubmit(searchFormValue);
     };
 
-    handleChange = ({ target }) => {
-        const { name, value } = target;
-        this.setState({ [name]: value });
+    const handleChange = ({ target }) => {
+        const { value } = target;
+
+        setSearchFormValue(value);
         if (value === '') {
-            this.props.onClearByInput();
+            onClearByInput();
         }
     };
 
-    render() {
-        const { searchFormValue } = this.state;
-        return (
-            <header className={css.searchbar}>
-                <form className={css.form} onSubmit={this.handleSubmit}>
-                    <button type="submit" className={css.formButton}>
-                        <span className={css.buttonLabel}>
-                            <MdOutlineImageSearch />
-                        </span>
-                    </button>
+    return (
+        <header className={css.searchbar}>
+            <form className={css.form} onSubmit={handleSubmit}>
+                <button type="submit" className={css.formButton}>
+                    <span className={css.buttonLabel}>
+                        <MdOutlineImageSearch />
+                    </span>
+                </button>
 
-                    <input
-                        onChange={this.handleChange}
-                        className={css.input}
-                        type="text"
-                        name="searchFormValue"
-                        value={searchFormValue}
-                        autoComplete="off"
-                        autoFocus
-                        placeholder="Search images and photos"
-                    />
-                </form>
-            </header>
-        );
-    }
-}
+                <input
+                    onChange={handleChange}
+                    className={css.input}
+                    type="text"
+                    name="searchFormValue"
+                    value={searchFormValue}
+                    autoComplete="off"
+                    autoFocus
+                    placeholder="Search images and photos"
+                />
+            </form>
+        </header>
+    );
+};
 
 Searchbar.propTypes = {
     onSubmit: PropTypes.func.isRequired,

@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 import { ToastContainer, toast } from 'react-toastify';
@@ -16,148 +16,114 @@ const KEY = '31814066-d36b2cc87cac42beedbbff451';
 const BASE_URL =
     'https://pixabay.com/api/?&image_type=photo&orientation=horizontal&';
 
-class App extends Component {
-    state = {
-        images: [],
-        page: 1,
-        searchQuery: '',
-        isLoading: false,
-        isModalOpen: false,
-        largeImageURL: '',
-        totalHits: '',
-    };
+const App = () => {
+    const [images, setImages] = useState([]);
+    const [page, setPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [largeImageURL, setLargeImageurl] = useState('');
+    const [totalHits, setTotalHits] = useState('');
+
     //-----------------------форма-сабмит----------------
-    searchImage = value => {
-        if (value !== this.state.searchQuery) {
-            this.setState({
-                images: [],
-                page: 1,
-                searchQuery: '',
-            });
+    const searchImage = value => {
+        if (value !== searchQuery) {
+            setImages([]);
+            setPage(1);
+            setSearchQuery('');
         }
 
         if (value !== '') {
-            this.setState({ searchQuery: value });
+            setSearchQuery(value);
         }
     };
+
     // -------------------------запрос------------------
-    async fetchImages() {
-        if (this.state.searchQuery === '') {
-            return;
-        }
-
-        const url = `${BASE_URL}q=${this.state.searchQuery}&page=${this.state.page}&key=${KEY}&per_page=${PER_PAGE}`;
-
-        this.setState({ isLoading: true });
-        try {
-            const response = await axios.get(url);
-            const { data } = await response;
-            this.setState({ isLoading: false });
-
-            if (data.totalHits === 0) {
-                this.notify();
+    useEffect(() => {
+        const fetchImages = async () => {
+            if (searchQuery === '') {
+                return;
             }
-            this.setState(prevState => ({
-                images: [...prevState.images, ...data.hits],
-                totalHits: data.totalHits,
-            }));
-        } catch (error) {
-            this.errorNotify();
-        }
-    }
 
+            const url = `${BASE_URL}q=${searchQuery}&page=${page}&key=${KEY}&per_page=${PER_PAGE}`;
+            setIsLoading(true);
+            try {
+                const response = await axios(url);
+                const { data } = response;
+
+                setIsLoading(false);
+
+                if (data.totalHits === 0) {
+                    toast.info(`Sorry, no images found for ${searchQuery}`, {
+                        position: toast.POSITION.TOP_CENTER,
+                        autoClose: 2000,
+                    });
+                }
+                setImages(prevState => [...prevState, ...data.hits]);
+                setTotalHits(data.totalHits);
+            } catch (error) {
+                errorNotify();
+                setIsLoading(false);
+            }
+        };
+        fetchImages();
+    }, [searchQuery, page]);
     //----------кнопка загрузить еще----------------------
-    loadMore = () => {
-        this.setState(prevState => ({
-            page: prevState.page + 1,
-        }));
+    const loadMore = () => {
+        setPage(() => page + 1);
     };
     //----------------клик по картинке----открываем модалку------
-    onImageClick = largeImageURL => {
-        this.setState({
-            largeImageURL,
-            isModalOpen: true,
-        });
+    const onImageClick = largeImageURL => {
+        setLargeImageurl(largeImageURL);
+        setIsModalOpen(true);
     };
     //------------------закрываем модалку---------------------
-    onCloseModal = () => {
-        this.setState({
-            isModalOpen: false,
-        });
+    const onCloseModal = () => {
+        setIsModalOpen(false);
     };
 
-    onCloseBackdropClick = e => {
+    const onCloseBackdropClick = e => {
         if (e.currentTarget === e.target) {
-            this.setState({
-                isModalOpen: false,
-            });
+            setIsModalOpen(false);
         }
     };
 
-    //----------метод цикла---вызов запроса-----------
-    componentDidUpdate(_, prevState) {
-        if (
-            prevState.searchQuery !== this.state.searchQuery ||
-            prevState.page !== this.state.page
-        ) {
-            this.fetchImages(this.state.searchQuery);
-        }
-    }
     //---------очищаем картинки, если инпут пустой---------
-    onClearByInput = () => {
-        this.setState({ images: [], page: 1, searchQuery: '', totalHits: '' });
+    const onClearByInput = () => {
+        setImages([]);
+        setPage(1);
+        setSearchQuery('');
+        setTotalHits('');
     };
     //-----------------нотификашки---------------------------
-    notify = () =>
-        toast.info(`Sorry, no images found for ${this.state.searchQuery}`, {
-            position: toast.POSITION.TOP_CENTER,
-            autoClose: 2000,
-        });
-    errorNotify = () =>
+
+    const errorNotify = () =>
         toast.error('Unable to connect to server, please try again later', {
             position: toast.POSITION.TOP_CENTER,
             autoClose: 3000,
         });
 
-    render() {
-        const {
-            images,
-            largeImageURL,
-            isLoading,
-            isModalOpen,
-            totalHits,
-            page,
-        } = this.state;
-        return (
-            <div className={css.App}>
-                <Searchbar
-                    onSubmit={this.searchImage}
-                    onClearByInput={this.onClearByInput}
+    return (
+        <div className={css.App}>
+            <Searchbar onSubmit={searchImage} onClearByInput={onClearByInput} />
+            <ImageGallery images={images} onImageClick={onImageClick} />
+            {totalHits > PER_PAGE &&
+                !isLoading &&
+                totalHits / PER_PAGE > page && <Button loadMore={loadMore} />}
+
+            {isLoading && <Loader />}
+
+            <ToastContainer />
+
+            {isModalOpen && (
+                <Modal
+                    largeImageURL={largeImageURL}
+                    onCloseModal={onCloseModal}
+                    onCloseBackdropClick={onCloseBackdropClick}
                 />
-                <ImageGallery
-                    images={images}
-                    onImageClick={this.onImageClick}
-                />
-                {totalHits > PER_PAGE &&
-                    !isLoading &&
-                    totalHits / PER_PAGE > page && (
-                        <Button loadMore={this.loadMore} />
-                    )}
-
-                {isLoading && <Loader />}
-
-                <ToastContainer />
-
-                {isModalOpen && (
-                    <Modal
-                        largeImageURL={largeImageURL}
-                        onCloseModal={this.onCloseModal}
-                        onCloseBackdropClick={this.onCloseBackdropClick}
-                    />
-                )}
-            </div>
-        );
-    }
-}
+            )}
+        </div>
+    );
+};
 
 export default App;
