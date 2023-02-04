@@ -107,10 +107,9 @@ const App = () => {
         <div className={css.App}>
             <Searchbar onSubmit={searchImage} onClearByInput={onClearByInput} />
             <ImageGallery images={images} onImageClick={onImageClick} />
-            {totalHits > PER_PAGE &&
-                !isLoading &&
-                totalHits / PER_PAGE > page && <Button loadMore={loadMore} />}
-
+            {!isLoading && images.length > 0 && images.length < totalHits && (
+                <Button loadMore={loadMore} />
+            )}
             {isLoading && <Loader />}
 
             <ToastContainer />
