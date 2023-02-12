@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
+import * as Scroll from 'react-scroll';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -39,6 +39,8 @@ const App = () => {
     };
 
     // -------------------------запрос------------------
+
+    const scroll = Scroll.animateScroll;
     useEffect(() => {
         const fetchImages = async () => {
             if (searchQuery === '') {
@@ -50,6 +52,7 @@ const App = () => {
             try {
                 const response = await axios(url);
                 const { data } = response;
+                console.log(data);
 
                 setIsLoading(false);
 
@@ -59,15 +62,18 @@ const App = () => {
                         autoClose: 2000,
                     });
                 }
+
                 setImages(prevState => [...prevState, ...data.hits]);
                 setTotalHits(data.totalHits);
             } catch (error) {
                 errorNotify();
+            } finally {
                 setIsLoading(false);
+                scroll.scrollMore(450, {});
             }
         };
         fetchImages();
-    }, [searchQuery, page]);
+    }, [searchQuery, page, scroll]);
     //----------кнопка загрузить еще----------------------
     const loadMore = () => {
         setPage(() => page + 1);
